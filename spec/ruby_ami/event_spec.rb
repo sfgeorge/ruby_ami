@@ -107,5 +107,75 @@ module RubyAMI
         end
       end
     end
+
+    describe "#[]= Header assignment" do
+      shared_examples 'not decoding a value' do
+        it 'does not decode the value' do
+          expect(event[header_key]).to eq(raw_header_value)
+        end
+      end
+
+      let(:raw_header_value) { '\\? Que \\?'.freeze }
+
+      let(:raw_headers) do
+        {
+          'Channel'  => 'SIP/101-3f3f',
+          header_key => raw_header_value
+        }
+      end
+
+      let(:event) do
+        Event.new(event_name).tap do |event|
+          raw_headers.each { |key, raw_value| event[key] = raw_value }
+        end
+      end
+
+      context 'when the event name is not "VarSet"' do
+        let(:event_name) { 'Hangup' }
+
+        context 'and the header key is "Value"' do
+          let(:header_key) { 'Value' }
+          it_behaves_like 'not decoding a value'
+        end
+      end
+
+      context 'when the event name is "VarSet"' do
+        let(:event_name) { 'VarSet' }
+
+        context 'and the header key is not "Value"' do
+          let(:header_key) { 'Uniqueid' }
+          it_behaves_like 'not decoding a value'
+        end
+
+        context 'and the header key is "Value"' do
+          let(:header_key) { 'Value' }
+
+          {
+            '\\a Que \\a'   => "\a Que \a",
+            '\\b Que \\b'   => "\b Que \b",
+            '\\f Que \\f'   => "\f Que \f",
+            '\\n Que \\n'   => "\n Que \n",
+            '\\r Que \\r'   => "\r Que \r",
+            '\\t Que \\t'   => "\t Que \t",
+            '\\v Que \\v'   => "\v Que \v",
+            '\\\\ Que \\\\' => '\\ Que \\',
+            "\\' Que \\'"   => "' Que '",
+            '\\" Que \\"'   => '" Que "',
+            '\\? Que \\?'   => '? Que ?',
+            '\\ ? Que \\ ?' => '\\ ? Que \\ ?',
+            '\\\\\\\\\\\\'  => '\\\\\\',
+            '\\\\\\\\\\?'   => '\\\\?',
+            '\\a\\b\\"\\?'  => "\a\b\"?",
+          }.each do |raw_value, expected_value|
+            context "the raw value #{raw_value.inspect}" do
+              let(:raw_header_value) { raw_value }
+              it 'is decoded' do
+                expect(event[header_key]).to eq(expected_value)
+              end
+            end
+          end
+        end
+      end
+    end
   end # Event
 end # RubyAMI
