@@ -32,7 +32,7 @@ module RubyAMI
       @headers[arg.to_s]
     end
 
-    def []=(key,value)
+    def []=(key, value)
       @headers[key.to_s] = value
     end
 

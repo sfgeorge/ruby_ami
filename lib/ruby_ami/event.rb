@@ -41,12 +41,13 @@ module RubyAMI
 
     # Set a Header value
     # @override RubyAMI::Response
-    def []=(key,value)
+    def []=(key, value)
       super key, parse_raw_value(key, value)
     end
 
     def parse_raw_value(key, value)
       return parse_raw_varset_value value if parse_raw_varset_value? key
+
       value
     end
 
